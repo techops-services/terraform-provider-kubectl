@@ -16,8 +16,18 @@ docker-compose down -v &>/dev/null || true
 rm -rf ${KUBECONFIG}
 sync; sync;
 
+export COMPOSE_HTTP_TIMEOUT=120
+export DOCKER_CLIENT_TIMEOUT=120
+
+echo "--> Pulling images (with retry)"
+for i in 1 2 3; do
+  docker-compose pull && break
+  echo "Pull attempt $i failed, retrying in 10s..."
+  sleep 10
+done
+
 echo "--> Starting k3s in docker-compose for arch ${ARCH}"
-docker-compose up -d --build --pull always
+docker-compose up -d --build
 
 echo "--> Allow insecure access to registry"
 docker exec k3s-node-1 /bin/sh -c 'mkdir -p /etc/rancher/k3s'
